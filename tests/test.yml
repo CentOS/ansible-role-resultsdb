@@ -1,5 +1,17 @@
 ---
-- hosts: localhost
-  remote_user: root
-  roles:
-    - .
+- hosts: local
+  connection: local
+  tasks:
+    - k8s:
+        version: v1
+        kind: Namespace
+        name: gating-services
+    - name: Deploy psql
+      k8s:
+        src: files/psql.yaml
+        namespace: gating-services
+        wait: true
+    - include_role:
+        name: ansible-role-resultsdb
+      vars:
+        resultsdb_database_uri: postgresql+psycopg2://resultsdb:resultsdb@postgres:5432/resultsdb

@@ -1,2 +1,85 @@
 ---
-# tasks file for .
+- name: Create resultsdb namespace
+  k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ resultsdb_namespace }}"
+    state: present
+    wait: true
+
+- name: Create resultsdb fedora-messaging ca secret
+  k8s:
+    definition:
+      api_version: v1
+      kind: Secret
+      metadata:
+        name: resultsdb-fedora-messaging-ca
+        namespace: "{{ resultsdb_namespace }}"
+        labels:
+          app: resultsdb
+      data:
+        resultsdb.ca: "{{ lookup('file', resultsdb_fedora_messaging_ca_path)  | b64encode }}"
+    wait: true
+  when:
+    - resultsdb_fedora_messaging == true
+    - resultsdb_fedora_messaging_ca_path
+
+- name: Create resultsdb fedora-messaging crt secret
+  k8s:
+    definition:
+      api_version: v1
+      kind: Secret
+      metadata:
+        name: resultsdb-fedora-messaging-crt
+        namespace: "{{ resultsdb_namespace }}"
+        labels:
+          app: resultsdb
+      data:
+        resultsdb.ca: "{{ lookup('file', resultsdb_fedora_messaging_crt_path)  | b64encode }}"
+    wait: true
+  when:
+    - resultsdb_fedora_messaging == true
+    - resultsdb_fedora_messaging_crt_path
+
+- name: Create resultsdb fedora-messaging key secret
+  k8s:
+    definition:
+      api_version: v1
+      kind: Secret
+      metadata:
+        name: resultsdb-fedora-messaging-key
+        namespace: "{{ resultsdb_namespace }}"
+        labels:
+          app: resultsdb
+      data:
+        resultsdb.ca: "{{ lookup('file', resultsdb_fedora_messaging_key_path)  | b64encode }}"
+    wait: true
+  when:
+    - resultsdb_fedora_messaging == true
+    - resultsdb_fedora_messaging_key_path
+
+- name: Create resultsdb secrets
+  k8s:
+    definition: "{{ lookup('template', 'secrets.yaml') }}"
+    wait: true
+
+- name: Create resultsdb configmaps
+  k8s:
+    definition: "{{ lookup('template', 'configmaps.yaml') }}"
+    wait: true
+
+- name: Create resultsdb deployment configs
+  k8s:
+    definition: "{{ lookup('template', 'deploymentconfigs.yaml') }}"
+    wait: true
+
+- name: Create resultsdb service
+  k8s:
+    definition: "{{ lookup('template', 'services.yaml') }}"
+    wait: true
+
+- name: Create resultsdb routes
+  k8s:
+    definition: "{{ lookup('template', 'routes.yaml') }}"
+    wait: true
+

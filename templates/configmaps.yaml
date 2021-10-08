@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "resultsdb-httpd-config"
+  namespace: "{{ resultsdb_namespace }}"
+  labels:
+    app: resultsdb
+data:
+  resultsdb.conf: |-
+    <IfModule !auth_basic_module>
+      LoadModule auth_basic_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_auth_basic.so'
+    </IfModule>
+    <IfModule !authn_file_module>
+      LoadModule authn_file_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_authn_file.so'
+    </IfModule>
+    <IfModule !authz_user_module>
+      LoadModule authz_user_module '${MOD_WSGI_MODULES_DIRECTORY}/mod_authz_user.so'
+    </IfModule>
+
+    <Location "/">
+      AuthType Basic
+      AuthName "Authentication Required"
+      AuthBasicProvider file
+      AuthUserFile "/etc/resultsdb/.htpasswd"
+      <LimitExcept GET>
+        Require valid-user
+      </LimitExcept>
+    </Location>
+---
+{% if resultsdb_fedora_messaging | bool  %}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fedora-messaging-configmap
+  namespace: "{{ resultsdb_namespace }}"
+  labels:
+    app: resultsdb
+data:
+  config.toml: |-
+    amqp_url = "{{ resultsdb_amqp_url }}"
+    topic_prefix = "{{ resultsdb_topic_prefix }}"
+
+    [tls]
+    ca_cert = "/etc/pki/rabbitmq/ca/resultsdb.ca"
+    keyfile = "/etc/pki/rabbitmq/key/resultsdb.key"
+    certfile = "/etc/pki/rabbitmq/crt/resultsdb.crt"
+{% endif  %}
