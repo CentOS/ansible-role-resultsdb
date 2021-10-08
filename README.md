@@ -24,13 +24,33 @@ Example Playbook
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
     - hosts: servers
+      vars:
+        resultsdb_namespace: gating-services
+        resultsdb_amqp_url: amqps://resultsdb:@rabbitmq.fedoraproject.org/%2Fpubsub
+        resultsdb_topic_prefix: org.stream.centos.prod
+        resultsdb_secret_key: '12345'
+        resultsdb_database_uri: ''
+        resultsdb_additional_result_outcomes:
+          - CRASHED
+          - QUEUED
+          - RUNNING
+        resultsdb_httpd_username: resultsdb
+        resultsdb_httpd_password: resultsdb
+        resultsdb_replicas: 1
+        resultsdb_image_name: quay.io/fedora/resultsdb:latest
+        resultsdb_image_pull_policy: Always
+        resultsdb_fedora_messaging: true # skips fedora messaging config if set to false
+        resultsdb_fedora_messaging_ca_path: ''
+        resultsdb_fedora_messaging_crt_path: ''
+        resultsdb_fedora_messaging_key_path: ''
+
       roles:
-         - { role: username.rolename, x: 42 }
+         - { role: ansible-role-resultsdb }
 
 License
 -------
 
-BSD
+MIT
 
 Author Information
 ------------------
