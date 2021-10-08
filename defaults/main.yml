@@ -1,11 +1,4 @@
 ---
-# defaults file for resultsdb
-# maybe
-# resultsdb_port: 5001
-# real
-# resultsdb_namespace: resultsdb
-  #   # resultsdb_db__url: ''
-
 resultsdb_namespace: gating-services
 resultsdb_amqp_url: amqps://resultsdb:@rabbitmq.fedoraproject.org/%2Fpubsub
 resultsdb_topic_prefix: org.stream.centos.prod
