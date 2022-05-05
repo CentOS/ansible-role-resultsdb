@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  name: "resultsdb-api"
+  namespace: "{{ resultsdb_namespace }}"
+  labels:
+    service: api
+    app: resultsdb
+spec:
+  replicas: {{ resultsdb_backend_replicas | int }}
+  selector:
+    app: resultsdb
+    service: api
+  strategy:
+    type: Rolling
+    rollingParams:
+      pre:
+        failurePolicy: Abort
+        execNewPod:  
+          containerName: api
+          command:
+            - /bin/sh
+            - -i
+            - -c
+            - |
+              # try for 10 minutes (600 seconds)
+              e=$(( $(date +%s) + 600 ))
+              i=0
+              while [ $(date +%s) -lt $e ]; do
+                echo 'TRY #'$((++i))
+                if resultsdb init_db ; then
+                  exit 0
+                fi
+              done
+              exit 1
+          volumes:
+            - config-volume
+            - httpd-config-volume
+  template:
+    metadata:
+      labels:
+        service: api
+        app: resultsdb
+    spec:
+      containers:
+        - name: api
+          image: "{{ resultsdb_backend_image_name }}"
+          imagePullPolicy: "{{ resultsdb_backend_image_pull_policy }}"
+          ports:
+            - containerPort: 5001
+          env:
+            - name: RESULTSDB_WSGI_SCRIPT_PATH
+              value: "/usr/share/resultsdb/resultsdb.wsgi"
+            - name: RESULTSDB_THREADS
+              value: "5"
+            - name: RESULTSDB_CONF_PATH
+              value: "/etc/httpd/conf.d/resultsdb.conf"
+            - name: RESULTSDB_LOG_LEVEL
+              value: "info"
+            - name: RESULTSDB_MESSAGING
+              value: "Y"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/resultsdb
+              readOnly: true
+            - name: httpd-config-volume
+              mountPath: /etc/httpd/conf.d
+              readOnly: true
+{% if resultsdb_backend_fedora_messaging | bool  %}
+            - name: fedora-messaging-ca-volume
+              mountPath: /etc/pki/rabbitmq/ca
+              readOnly: true
+            - name: fedora-messaging-key-volume
+              mountPath: /etc/pki/rabbitmq/key
+              readOnly: true
+            - name: fedora-messaging-crt-volume
+              mountPath: /etc/pki/rabbitmq/crt
+              readOnly: true
+            - name: fedora-messaging-config-volume
+              mountPath: /etc/fedora-messaging
+              readOnly: true
+{% endif %}
+          readinessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          livenessProbe:
+            timeoutSeconds: 1
+            initialDelaySeconds: 30
+            httpGet:
+              path: /api/v2.0/
+              port: 5001
+          # Limit to 384MB memory. This is probably *not* enough but it is
+          # necessary in the current environment to allow for 2 replicas and
+          # rolling updates, without hitting the (very aggressive) memory quota.
+          resources:
+            limits:
+              memory: 384Mi
+              cpu: 0.3
+      volumes:
+        - name: config-volume
+          secret:
+            secretName: "resultsdb-config"
+        - name: httpd-config-volume
+          configMap:
+            name: "resultsdb-httpd-config"
+{% if resultsdb_backend_fedora_messaging | bool %}
+        - name: fedora-messaging-config-volume
+          configMap:
+            name: fedora-messaging-configmap
+        - name: fedora-messaging-ca-volume
+          secret:
+            secretName: resultsdb-fedora-messaging-ca
+        - name: fedora-messaging-crt-volume
+          secret:
+            secretName: resultsdb-fedora-messaging-crt
+        - name: fedora-messaging-key-volume
+          secret:
+            secretName: resultsdb-fedora-messaging-key
+{% endif %}
+  triggers:
+    - type: ConfigChange
+

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: "resultsdb-web"
+  namespace: "{{ resultsdb_namespace }}"
+  labels:
+    app: resultsdb
+    service: web
+spec:
+{% if resultsdb_host  %}
+  host: {{ resultsdb_host }}
+{% endif %}
+  path: /
+  port:
+    targetPort: web
+  to:
+    kind: Service
+    name: "resultsdb-frontend"
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

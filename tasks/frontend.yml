@@ -1,0 +1,25 @@
+---
+- name: Create resultsdb-frontend secrets
+  k8s:
+    definition: "{{ lookup('template', 'frontend/secrets.yaml') }}"
+    wait: true
+
+- name: Create resultsdb-frontend configmaps
+  k8s:
+    definition: "{{ lookup('template', 'frontend/configmaps.yaml') }}"
+    wait: true
+
+- name: Create resultsdb-frontend deployment config
+  k8s:
+    definition: "{{ lookup('template', 'frontend/deploymentconfigs.yaml') }}"
+    wait: true
+
+- name: Create resultsdb-frontend service
+  k8s:
+    definition: "{{ lookup('template', 'frontend/services.yaml') }}"
+    wait: true
+
+- name: Create resultsdb-frontend route
+  k8s:
+    definition: "{{ lookup('template', 'frontend/routes.yaml') }}"
+    wait: true
