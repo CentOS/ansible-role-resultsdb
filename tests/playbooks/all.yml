@@ -39,7 +39,7 @@
 
     - name: Deploy psql
       k8s:
-        src: files/psql.yaml
+        src: "{{ playbook_dir }}/../files/psql.yaml"
         namespace: postgres
         wait: true
     - include_role:
