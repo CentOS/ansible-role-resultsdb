@@ -1,17 +1,46 @@
 ---
 - hosts: local
   connection: local
+  vars:
+    resultsdb_namespace: resultsdb
+    resultsdb_host: ''
+    # backend vars
+    resultsdb_backend_app_secret: resultsdb
+    resultsdb_backend_amqp_url: amqps://resultsdb:@rabbitmq.fedoraproject.org/%2Fpubsub
+    resultsdb_backend_topic_prefix: org.stream.centos.prod
+    resultsdb_backend_database_uri: 'postgresql+psycopg2://resultsdb:resultsdb@postgres.postgres.svc.cluster.local:5432/resultsdb'
+    resultsdb_backend_additional_result_outcomes:
+      - CRASHED
+      - QUEUED
+      - RUNNING
+    resultsdb_backend_replicas: 1
+    resultsdb_backend_image_name: quay.io/fedora-kube-sig/resultsdb-backend:latest-cs9
+    resultsdb_backend_image_pull_policy: Always
+    resultsdb_backend_fedora_messaging: false
+    resultsdb_backend_fedora_messaging_ca_path: ''
+    resultsdb_backend_fedora_messaging_crt_path: ''
+    resultsdb_backend_fedora_messaging_key_path: ''
+    resultsdb_backend_httpd_username: resultsdb
+    resultsdb_backend_httpd_password: $apr1$lowhkBJ2$qJ0Q8/p0VQevrzZzLNUpA0 # resultsdb
+    # frontend vars
+    resultsdb_frontend_replicas: 1
+    resultsdb_frontend_image_name: quay.io/fedora-kube-sig/resultsdb-frontend:latest-cs9
+    resultsdb_frontend_image_pull_policy: Always
+    resultsdb_frontend_app_secret: resultsdb
+    resultsdb_frontend_api_url: http://resultsdb-api.resultsdb.svc.cluster.local:5001/api/v2.0
   tasks:
-    - k8s:
-        version: v1
+    - name: Create postgres namespace
+      k8s:
+        api_version: v1
         kind: Namespace
-        name: gating-services
+        name: postgres
+        state: present
+        wait: true
+
     - name: Deploy psql
       k8s:
         src: files/psql.yaml
-        namespace: gating-services
+        namespace: postgres
         wait: true
     - include_role:
         name: ansible-role-resultsdb
-      vars:
-        resultsdb_database_uri: postgresql+psycopg2://resultsdb:resultsdb@postgres:5432/resultsdb

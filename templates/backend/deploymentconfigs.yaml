@@ -7,7 +7,7 @@ metadata:
     service: api
     app: resultsdb
 spec:
-  replicas: {{ resultsdb_replicas | int }}
+  replicas: {{ resultsdb_backend_replicas | int }}
   selector:
     app: resultsdb
     service: api
@@ -44,10 +44,21 @@ spec:
     spec:
       containers:
         - name: api
-          image: "{{ resultsdb_image_name }}"
-          imagePullPolicy: "{{ resultsdb_image_pull_policy }}"
+          image: "{{ resultsdb_backend_image_name }}"
+          imagePullPolicy: "{{ resultsdb_backend_image_pull_policy }}"
           ports:
             - containerPort: 5001
+          env:
+            - name: RESULTSDB_WSGI_SCRIPT_PATH
+              value: "/usr/share/resultsdb/resultsdb.wsgi"
+            - name: RESULTSDB_THREADS
+              value: "5"
+            - name: RESULTSDB_CONF_PATH
+              value: "/etc/httpd/conf.d/resultsdb.conf"
+            - name: RESULTSDB_LOG_LEVEL
+              value: "info"
+            - name: RESULTSDB_MESSAGING
+              value: "Y"
           volumeMounts:
             - name: config-volume
               mountPath: /etc/resultsdb
@@ -55,7 +66,7 @@ spec:
             - name: httpd-config-volume
               mountPath: /etc/httpd/conf.d
               readOnly: true
-{% if resultsdb_fedora_messaging | bool  %}
+{% if resultsdb_backend_fedora_messaging | bool  %}
             - name: fedora-messaging-ca-volume
               mountPath: /etc/pki/rabbitmq/ca
               readOnly: true
@@ -95,7 +106,7 @@ spec:
         - name: httpd-config-volume
           configMap:
             name: "resultsdb-httpd-config"
-{% if resultsdb_fedora_messaging | bool %}
+{% if resultsdb_backend_fedora_messaging | bool %}
         - name: fedora-messaging-config-volume
           configMap:
             name: fedora-messaging-configmap

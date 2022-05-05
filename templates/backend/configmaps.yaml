@@ -27,7 +27,7 @@ data:
       </LimitExcept>
     </Location>
 ---
-{% if resultsdb_fedora_messaging | bool  %}
+{% if resultsdb_backend_fedora_messaging | bool  %}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -37,8 +37,8 @@ metadata:
     app: resultsdb
 data:
   config.toml: |-
-    amqp_url = "{{ resultsdb_amqp_url }}"
-    topic_prefix = "{{ resultsdb_topic_prefix }}"
+    amqp_url = "{{ resultsdb_backend_amqp_url }}"
+    topic_prefix = "{{ resultsdb_backend_topic_prefix }}"
 
     [tls]
     ca_cert = "/etc/pki/rabbitmq/ca/resultsdb.ca"
